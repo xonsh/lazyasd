@@ -23,10 +23,85 @@ Furthermore, the more data that is built globally, the longer importing the
 module takes.
 
 For example, consider a function that reports if a string contains the word
-``"foo"`` using regular expressions. The naive version is slow, per function
-call, because it has to construct the regex each time::
+``"foo"`` using regular expressions. The naive version is relatively slow, per
+function call, because it has to construct the regex each time::
 
     import re
 
-    def has_foo(s):
-        return re.search('foo', )
+    def has_foo_simple(s):
+        return re.search('foo', s) is not None
+
+The standard way of improving performance is to compile the regex at global
+scope. Rewriting, we would see::
+
+    import re
+
+    FOO_RE = re.compile('foo')
+
+    def has_foo_compiled(s):
+        return FOO_RE.search(s) is not None
+
+Now, each call of ``has_foo_compiled()`` is much faster than a call of
+``has_foo_simple()`` because we have shifted the compiliation to import
+time.  But what if we never actually call ``has_foo()``? In this case,
+the original version was better because the imports are fast.
+
+Having the best of both compile-once and don't-compile-on-import is where
+the lazy and self-destructive tools come in.  A ``LazyObject`` instance
+has a loader function, a context to place the result of the into, and the
+name of the loaded value in the context. The ``LazyObject`` does no
+work when it is first created.  However, whenever an attribute is accessed
+(or a variety of other operations) the loader will be called, the true
+value will be constructed, and the ``LazyObject`` will act as a proxy to
+loaded object.
+
+Using the above regex example, we have minimal import-time and run-time
+perfomance hits with the following lazy implementation::
+
+    import re
+    from lazyasd import LazyObject
+
+    FOO_RE = LazyObject(lambda: re.compile('foo'), globals(), 'FOO_RE')
+
+    def has_foo_lazy(s):
+        return FOO_RE.search(s) is not None
+
+To walk through the above, at import time ``FOO_RE`` is a LazyObject, that has a
+lambda loader which returns the regex we care about.  If ``FOO_RE`` is never
+accessed this is how it will remain.  However, the first time ``has_foo_lazy()``
+is called, accessing the ``search`` method will cause the ``LazyObject`` to:
+
+1. Call the loader (getting ``re.compile('foo')`` as the result)
+2. Place the result in the context, eg ``globals()['FOO_RE'] = re.compile('foo')``
+3. Look up attributes and methods (such as ``search``) on the result.
+
+Now because of the context replacement, ``FOO_RE`` now is a regular expression
+object. Further calls to ``has_foo_lazy()`` will see ``FOO_RE`` as a regular
+expression object directly, and not as a ``LazyObject``.  In fact, if no lingering
+refences remain, the original ``LazyObject`` instance can be totally cleaned up
+by the garbage collector!
+
+For the truly lazy, there is also a ``lazyobject`` decorator::
+
+    import re
+    from lazyasd import lazyobject
+
+    @lazyobject
+    def foo_re():
+        return re.compile('foo')
+
+    def has_foo_lazy(s):
+        return foo_re.search(s) is not None
+
+Another useful pattern is to implement lazy module imports, where the
+module is only imported if a member of it used::
+
+    import importlib
+    from lazyasd import lazyobject
+
+    @lazyobject
+    def os():
+        return importlib.import_module('os')
+
+
+
