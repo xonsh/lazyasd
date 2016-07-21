@@ -10,7 +10,7 @@ module import. The first is delayed construction of global state and the
 second is to import expensive modules in a background thread.
 
 Lazy Construction
------------------
+*****************
 Many operations related to data construction or inspection setup can take
 a long time to complete. If only a single copy of the data or a cached
 representation is needed, in Python it is common to move the data to the
@@ -116,4 +116,27 @@ the first value is a dictionary of key-loaders.  Rather than having a single
 loader, each value is loaded individually when its key is first accessed.
 
 
+Background Imports
+******************
+Even with all of the above laziness, sometimes it isn't enough. Sometimes a
+module is so painful to import and so unavoidable that you need to import
+it on background thread so that the rest of the application can boot up
+in the meantime. This is the purpose of ``load_module_in_background()``.
+
+For example, if you are using pygments and you want the import to safely
+be 100x faster, simply drop in the following lines::
+
+    # must come before pygments imports
+    from lazyasd import load_module_in_background
+    load_module_in_background('pkg_resources',
+                              replacements={'pygments.plugin': 'pkg_resources'})
+
+    # now pygments is fast to import
+    from pygments.style import Style
+
+This prevents ``pkg_resources``, which comes from setuptools, from searching your
+entire filesystem for plugins at import time. Like above, this import acts as
+proxy and will block until it is needed.  It is also robust if the module has
+already been imported. In some cases, this background importing is the best a
+third party application can do.
 
