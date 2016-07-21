@@ -103,5 +103,17 @@ module is only imported if a member of it used::
     def os():
         return importlib.import_module('os')
 
+The world is beautifully yours, but feel free to take a nap first.
+
+Specific Laziness
+-----------------
+The ``LazyBool`` class and ``lazybool`` decorator have the same interface as
+lazy objects.  These are provided for objects that are intended to be resolved
+as booleans.
+
+The ``LazyDict`` class and ``lazydict`` decorator are similar.  Here however,
+the first value is a dictionary of key-loaders.  Rather than having a single
+loader, each value is loaded individually when its key is first accessed.
+
 
 
