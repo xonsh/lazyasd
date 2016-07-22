@@ -9,6 +9,9 @@ The tools in this module implement two distinct strategies for speeding up
 module import. The first is delayed construction of global state and the
 second is to import expensive modules in a background thread.
 
+Feel free to use lazyasd as a dependency or, because it is implemented as a
+single module, copy the ``lazyasd.py`` file into your project.
+
 Lazy Construction
 *****************
 Many operations related to data construction or inspection setup can take
