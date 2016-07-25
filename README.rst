@@ -27,7 +27,9 @@ module takes.
 
 For example, consider a function that reports if a string contains the word
 ``"foo"`` using regular expressions. The naive version is relatively slow, per
-function call, because it has to construct the regex each time::
+function call, because it has to construct the regex each time:
+
+.. code-block:: python
 
     import re
 
@@ -35,7 +37,9 @@ function call, because it has to construct the regex each time::
         return re.search('foo', s) is not None
 
 The standard way of improving performance is to compile the regex at global
-scope. Rewriting, we would see::
+scope. Rewriting, we would see:
+
+.. code-block:: python
 
     import re
 
@@ -59,7 +63,9 @@ value will be constructed, and the ``LazyObject`` will act as a proxy to
 loaded object.
 
 Using the above regex example, we have minimal import-time and run-time
-perfomance hits with the following lazy implementation::
+perfomance hits with the following lazy implementation:
+
+.. code-block:: python
 
     import re
     from lazyasd import LazyObject
@@ -84,7 +90,9 @@ expression object directly, and not as a ``LazyObject``.  In fact, if no lingeri
 refences remain, the original ``LazyObject`` instance can be totally cleaned up
 by the garbage collector!
 
-For the truly lazy, there is also a ``lazyobject`` decorator::
+For the truly lazy, there is also a ``lazyobject`` decorator:
+
+.. code-block:: python
 
     import re
     from lazyasd import lazyobject
@@ -97,7 +105,9 @@ For the truly lazy, there is also a ``lazyobject`` decorator::
         return foo_re.search(s) is not None
 
 Another useful pattern is to implement lazy module imports, where the
-module is only imported if a member of it used::
+module is only imported if a member of it used:
+
+.. code-block:: python
 
     import importlib
     from lazyasd import lazyobject
@@ -127,7 +137,9 @@ it on background thread so that the rest of the application can boot up
 in the meantime. This is the purpose of ``load_module_in_background()``.
 
 For example, if you are using pygments and you want the import to safely
-be 100x faster, simply drop in the following lines::
+be 100x faster, simply drop in the following lines:
+
+.. code-block:: python
 
     # must come before pygments imports
     from lazyasd import load_module_in_background
