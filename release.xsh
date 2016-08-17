@@ -69,9 +69,11 @@ def replace_in_file(pattern, new, fname):
     with open(fname, 'w') as f:
         f.write(upd)
 
-
-NEWS = [os.path.join('news', f) for f in os.listdir('news')
-        if f != 'TEMPLATE.rst']
+if os.path.isdir('news'):
+    NEWS = [os.path.join('news', f) for f in os.listdir('news')
+            if f != 'TEMPLATE.rst']
+else:
+    NEWS = []
 NEWS_CATEGORIES = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed',
                    'Security']
 NEWS_RE = re.compile('\*\*({0}):\*\*'.format('|'.join(NEWS_CATEGORIES)),
