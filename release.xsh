@@ -29,7 +29,7 @@ WILL_DO = {
   'do_git': True,
   'do_pip': True,
   'do_conda': True,
-  'do_docs': True,
+  'do_docs': False,
 }
 # Allow alternative SHA patterns for feedstock, uncomment the one you need
 # Option 0
