@@ -274,6 +274,11 @@ class BackgroundModuleProxy(types.ModuleType):
                 time.sleep(0.001)
             mod = sys.modules[modname]
             dct['loaded'] = True
+        # some modules may do construction after import, give them a second
+        stall = 0
+        while not hasattr(mod, name) and stall < 1000:
+            stall += 1
+            time.sleep(0.001)
         return getattr(mod, name)
 
 
