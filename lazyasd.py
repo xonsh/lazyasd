@@ -1,4 +1,4 @@
-"""Lazy and self destrctive containers for speeding up module import."""
+"""Lazy and self destructive containers for speeding up module import."""
 # Copyright 2015-2016, the xonsh developers. All rights reserved.
 import os
 import sys
@@ -8,7 +8,7 @@ import builtins
 import threading
 import importlib
 import importlib.util
-import collections.abc as abc
+import collections.abc as cabc
 
 __version__ = '0.1.3'
 
@@ -128,7 +128,7 @@ def lazyobject(f):
     return LazyObject(f, f.__globals__, f.__name__)
 
 
-class LazyDict(abc.MutableMapping):
+class LazyDict(cabc.MutableMapping):
 
     def __init__(self, loaders, ctx, name):
         """Dictionary like object that lazily loads its values from an initial
