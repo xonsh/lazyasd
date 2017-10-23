@@ -4,11 +4,19 @@ import os
 import sys
 import time
 import types
-import builtins
 import threading
 import importlib
-import importlib.util
-import collections.abc as cabc
+try:
+    from importlib.util import resolve_name
+except ImportError:
+    def resolve_name(name, package):
+        if name.startswith('.'):
+            raise NotImplementedError('Python 3 needed for relative modules')
+        return name
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
 
 __version__ = '0.1.3'
 
@@ -56,7 +64,7 @@ class LazyObject(object):
 
     def __getattribute__(self, name):
         if name == '_lasdo' or name == '_lazy_obj':
-            return super().__getattribute__(name)
+            return super(LazyObject, self).__getattribute__(name)
         obj = self._lazy_obj()
         return getattr(obj, name)
 
@@ -66,7 +74,8 @@ class LazyObject(object):
 
     def __iter__(self):
         obj = self._lazy_obj()
-        yield from obj
+        for item in obj:
+            yield item
 
     def __getitem__(self, item):
         obj = self._lazy_obj()
@@ -128,7 +137,7 @@ def lazyobject(f):
     return LazyObject(f, f.__globals__, f.__name__)
 
 
-class LazyDict(cabc.MutableMapping):
+class LazyDict(MutableMapping):
 
     def __init__(self, loaders, ctx, name):
         """Dictionary like object that lazily loads its values from an initial
@@ -192,7 +201,8 @@ class LazyDict(cabc.MutableMapping):
             self._destruct()
 
     def __iter__(self):
-        yield from (set(self._d.keys()) | set(self._loaders.keys()))
+        for item in (set(self._d.keys()) | set(self._loaders.keys())):
+            yield item
 
     def __len__(self):
         return len(self._d) + len(self._loaders)
@@ -263,7 +273,7 @@ class BackgroundModuleProxy(types.ModuleType):
     def __getattribute__(self, name):
         passthrough = frozenset({'__dct__', '__class__', '__spec__'})
         if name in passthrough:
-            return super().__getattribute__(name)
+            return super(BackgroundModuleProxy, self).__getattribute__(name)
         dct = self.__dct__
         modname = dct['modname']
         if dct['loaded']:
@@ -286,7 +296,7 @@ class BackgroundModuleLoader(threading.Thread):
     """Thread to load modules in the background."""
 
     def __init__(self, name, package, replacements, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(BackgroundModuleLoader, self).__init__(*args, **kwargs)
         self.daemon = True
         self.name = name
         self.package = package
@@ -308,7 +318,7 @@ class BackgroundModuleLoader(threading.Thread):
                 counter = 0
             time.sleep(0.001)
         # now import module properly
-        modname = importlib.util.resolve_name(self.name, self.package)
+        modname = resolve_name(self.name, self.package)
         if isinstance(sys.modules[modname], BackgroundModuleProxy):
             del sys.modules[modname]
         mod = importlib.import_module(self.name, package=self.package)
@@ -346,11 +356,15 @@ def load_module_in_background(name, package=None, debug='DEBUG', env=None,
         a proxy module that will block until delay attribute access until the
         module is fully loaded.
     """
-    modname = importlib.util.resolve_name(name, package)
+    modname = resolve_name(name, package)
     if modname in sys.modules:
         return sys.modules[modname]
     if env is None:
-        env = getattr(builtins, '__xonsh_env__', os.environ)
+        try:
+            import builtins
+            env = getattr(builtins, '__xonsh_env__', os.environ)
+        except:
+            return os.environ
     if env.get(debug, None):
         mod = importlib.import_module(name, package=package)
         return mod
