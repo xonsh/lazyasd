@@ -18,7 +18,7 @@ try:
 except ImportError:
     from collections import MutableMapping
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 
 class LazyObject(object):

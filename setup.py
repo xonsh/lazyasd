@@ -8,7 +8,7 @@ except ImportError:
     HAVE_SETUPTOOLS = False
 
 
-VERSION = '0.1.3'
+VERSION = '0.1.4'
 
 # copy over the correct version of lazyasd
 filename = 'lazyasd-py3.py' if sys.version_info.major >= 3 else 'lazyasd-py2.py'

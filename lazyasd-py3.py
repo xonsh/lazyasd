@@ -10,7 +10,7 @@ import importlib
 import importlib.util
 import collections.abc as cabc
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 
 class LazyObject(object):
