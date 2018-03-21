@@ -10,6 +10,18 @@ except ImportError:
 
 VERSION = '0.1.3'
 
+# copy over the correct version of lazyasd
+filename = 'lazyasd-py3.py' if sys.version_info.major >= 3 else 'lazyasd-py2.py'
+lazyasd = """########################################################################
+### WARNING! Copied from {0}
+###          Do not modify directly, instead edit the original file!
+########################################################################
+""".format(filename)
+with open(filename) as f:
+    lazyasd += f.read()
+with open('lazyasd.py', 'w') as f:
+    f.write(lazyasd)
+
 setup_kwargs = {
     "version": VERSION,
     "description": ('Lazy & self-destructive tools for speeding up '
@@ -26,7 +38,8 @@ setup_kwargs = {
         "Topic :: Utilities",
         ],
     "zip_safe": False,
-    "data_files": [("", ['LICENSE', 'README.rst']),],
+    "data_files": [("", ['LICENSE', 'README.rst',
+                         'lazyasd-py2.py', 'lazyasd-py3.py']),],
     }
 
 
