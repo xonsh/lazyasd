@@ -93,3 +93,5 @@ ENV/
 
 feedstock/
 *.cred
+# Rever
+rever/
