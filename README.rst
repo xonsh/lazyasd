@@ -20,7 +20,7 @@ representation is needed, in Python it is common to move the data to the
 global or module level scope.
 
 By moving to module level, we help ensure that only a single copy of the data
-is ever built.  However, by moving to module scope, the single perfomance hit
+is ever built.  However, by moving to module scope, the single performance hit
 now comes at import time. This is itself wasteful if the data is never used.
 Furthermore, the more data that is built globally, the longer importing the
 module takes.
@@ -49,7 +49,7 @@ scope. Rewriting, we would see:
         return FOO_RE.search(s) is not None
 
 Now, each call of ``has_foo_compiled()`` is much faster than a call of
-``has_foo_simple()`` because we have shifted the compiliation to import
+``has_foo_simple()`` because we have shifted the compilation to import
 time.  But what if we never actually call ``has_foo()``? In this case,
 the original version was better because the imports are fast.
 
@@ -63,7 +63,7 @@ value will be constructed, and the ``LazyObject`` will act as a proxy to
 loaded object.
 
 Using the above regex example, we have minimal import-time and run-time
-perfomance hits with the following lazy implementation:
+performance hits with the following lazy implementation:
 
 .. code-block:: python
 
@@ -87,7 +87,7 @@ is called, accessing the ``search`` method will cause the ``LazyObject`` to:
 Now because of the context replacement, ``FOO_RE`` now is a regular expression
 object. Further calls to ``has_foo_lazy()`` will see ``FOO_RE`` as a regular
 expression object directly, and not as a ``LazyObject``.  In fact, if no lingering
-refences remain, the original ``LazyObject`` instance can be totally cleaned up
+references remain, the original ``LazyObject`` instance can be totally cleaned up
 by the garbage collector!
 
 For the truly lazy, there is also a ``lazyobject`` decorator:
