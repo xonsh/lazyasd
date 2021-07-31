@@ -38,8 +38,6 @@ setup_kwargs = {
         "Topic :: Utilities",
         ],
     "zip_safe": False,
-    "data_files": [("", ['LICENSE', 'README.rst',
-                         'lazyasd-py2.py', 'lazyasd-py3.py']),],
     }
 
 
