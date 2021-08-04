@@ -282,31 +282,107 @@ class BackgroundModuleProxy(types.ModuleType):
         return getattr(mod, name)
 
 
-class BackgroundModuleLoader(threading.Thread):
-    """Thread to load modules in the background."""
+class BackgroundModuleDelay:
+    def __init__(self):
+        pass
 
-    def __init__(self, name, package, replacements, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.daemon = True
-        self.name = name
-        self.package = package
-        self.replacements = replacements
-        self.start()
+    def wait(self):
+        pass
 
-    def run(self):
-        # wait for other modules to stop being imported
-        # We assume that module loading is finished when sys.modules doesn't
-        # get longer in 5 consecutive 1ms waiting steps
+class BackgroundModuleDelayDefault(BackgroundModuleDelay):
+    # wait for other modules to stop being imported
+    # We assume that module loading is finished when sys.modules doesn't
+    # get longer in numchecks consecutive checkperiodms  waiting steps
+    # default 5 checks with 1ms interval
+    def __init__(self, numchecks=5, checkperiodms=1):
+        self.numchecks = numchecks
+        self.checkperiodms = checkperiodms
+
+    def wait(self):
+        _numchecks = self.numchecks
+        _checkperiodms = self.checkperiodms
         counter = 0
         last = -1
-        while counter < 5:
+        while counter < _numchecks:
             new = len(sys.modules)
             if new == last:
                 counter += 1
             else:
                 last = new
                 counter = 0
-            time.sleep(0.001)
+            
+            time.sleep(0.001 * _checkperiodms)
+
+class BackgroundModuleDelayExpBackoff(BackgroundModuleDelay):
+    # Require numchecks consecutive periods where
+    # sys.modules doesn't grow. Increase check interval
+    # starting with initicheckperiodms on each check by
+    # factor. Gives exponential back-off behvaiour.
+    def __init__(self, numchecks=5, initcheckperiodms=1, factor=2):
+        self.numchecks = numchecks
+        self.initcheckperiodms = initcheckperiodms
+        self.factor = factor
+
+    def wait(self):
+        _numchecks = self.numchecks
+        _factor = self.factor
+        _checkperiodms = self.initcheckperiodms
+
+        counter = 0
+        last = -1
+        while counter < _numchecks:
+            new = len(sys.modules)
+            if new == last:
+                counter += 1
+            else:
+                last = new
+                counter = 0
+        _checkperiodms = _checkperiodms * _factor;    
+        time.sleep(0.001 * _checkperiodms)
+
+class BackgroundModuleDelayNoop(BackgroundModuleDelay):
+    # Do not wait, at all
+    def __init__(self):
+        pass
+    def wait(self):
+        pass
+
+class BackgroundModuleDelayConst(BackgroundModuleDelay):
+    # Wait a constant delayms milliseconds
+    def __init__(self, delayms):
+        self.delayms = delayms
+    def wait(self):
+        time.sleep(0.001 * self.delayms)
+
+class BackgroundModuleDelayEvent(BackgroundModuleDelay):
+    # Wait until main thread tells us to proceed
+    def __init__(self, timeoutms):
+        self.timeoutms = timeoutms
+
+    def get_event(self):
+        self.event = threading.Event()
+        return self.event
+
+    def wait(self):
+        _timeoutms = self.timeoutms
+        while not self.event.wait(0.001 * self.timeoutms):
+            pass
+
+class BackgroundModuleLoader(threading.Thread):
+    """Thread to load modules in the background."""
+
+    def __init__(self, name, package, replacements, \
+            delayobj=BackgroundModuleDelayDefault(), *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.daemon = True
+        self.name = name
+        self.package = package
+        self.replacements = replacements
+        self.delayobj=delayobj
+        self.start()
+
+    def run(self):
+        self.delayobj.wait()
         # now import module properly
         modname = importlib.util.resolve_name(self.name, self.package)
         if isinstance(sys.modules[modname], BackgroundModuleProxy):
@@ -318,8 +394,8 @@ class BackgroundModuleLoader(threading.Thread):
                 setattr(targmod, varname, mod)
 
 
-def load_module_in_background(name, package=None, debug='DEBUG', env=None,
-                              replacements=None):
+def load_module_in_background(name, package=None, debug='DEBUG', env=None,\
+        replacements=None, delayobj=BackgroundModuleDelayDefault()):
     """Entry point for loading modules in background thread.
 
     Parameters
@@ -338,6 +414,10 @@ def load_module_in_background(name, package=None, debug='DEBUG', env=None,
         import the lazily loaded moudle, with the variable name in that
         module. For example, suppose that foo.bar imports module a as b,
         this dict is then {'foo.bar': 'b'}.
+    delayobj: initial delay before loading module
+        default(None): until sys.modules stops growing for 5ms.
+            Other options include Noop (do not wait), ExpBackoff (exponential
+            backoff), and Const (constant delay).
 
     Returns
     -------
@@ -355,5 +435,5 @@ def load_module_in_background(name, package=None, debug='DEBUG', env=None,
         mod = importlib.import_module(name, package=package)
         return mod
     proxy = sys.modules[modname] = BackgroundModuleProxy(modname)
-    BackgroundModuleLoader(name, package, replacements or {})
+    BackgroundModuleLoader(name, package, replacements or {}, delayobj)
     return proxy
