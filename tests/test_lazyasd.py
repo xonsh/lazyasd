@@ -15,8 +15,8 @@ def test_bg_load():
     import pkg_resources
     pkg_resources.iter_entry_points
 
-
 def test_lazyobject_plus():
-    s = "test"
-    lo = LazyObject(lambda: s, {}, 'lo')
-    assert lo + s == 2*s
+    a, s = "a ", "test"
+    lo = LazyObject(lambda: a, {}, 'lo')
+    assert lo + s == a + s
+    #assert s + lo == s + a  # sadly not solved
