@@ -68,6 +68,10 @@ class LazyObject(object):
         obj = self._lazy_obj()
         return getattr(obj, name)
 
+    def __add__(self, other):
+        obj = self._lazy_obj()
+        return obj + other
+
     def __bool__(self):
         obj = self._lazy_obj()
         return bool(obj)
