@@ -19,4 +19,4 @@ def test_lazyobject_plus():
     a, s = "a ", "test"
     lo = LazyObject(lambda: a, {}, 'lo')
     assert lo + s == a + s
-    #assert s + lo == s + a  # sadly not solved
+    assert s + lo == s + a
